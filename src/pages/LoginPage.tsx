@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { Utensils, HeartHandshake, ShieldCheck, ArrowLeft, Mail, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -94,31 +94,56 @@ export default function LoginPage() {
   const config = configMap[portal || 'restaurant'] || configMap.restaurant;
   const Icon = config.icon;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      console.log('Backend response:', data);
 
-      // Dynamic redirection for agents based on mock role
-      if (portal === 'agent') {
-        if (email === 'verify@agent.com') {
-          navigate('/dashboard/agent/verify');
-        } else if (email === 'delivery@agent.com') {
-          navigate('/dashboard/agent/delivery');
+      if (data.success) {
+        if (portal === 'agent') {
+          if (email === 'verify@agent.com') {
+            navigate('/dashboard/agent/verify');
+          } else if (email === 'delivery@agent.com') {
+            navigate('/dashboard/agent/delivery');
+          } else {
+            navigate(config.dashboardPath);
+          }
         } else {
           navigate(config.dashboardPath);
         }
       } else {
-        navigate(config.dashboardPath);
+        alert(data.message || 'Login failed');
       }
-    }, 1200);
+    } catch (error) {
+      console.error('Login error:', error);
+      // Fallback for demo if server is not running
+      setTimeout(() => {
+        navigate(config.dashboardPath);
+      }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div
+    <motion.div
       ref={containerRef}
       onMouseMove={handleMouseMove}
+      initial={{ opacity: 0, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, filter: 'blur(10px)' }}
+      transition={{ duration: 0.5 }}
       className="min-h-screen bg-black text-white flex items-center justify-center relative overflow-hidden font-sans"
     >
       {/* Brand Logo - Top Left */}
@@ -144,17 +169,7 @@ export default function LoginPage() {
             )
           }}
         />
-        {/* Thematic Background Image with Massive Blur */}
-        <motion.div
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 2 }}
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${config.bgImage})`,
-            filter: 'blur(20px) brightness(0.4)'
-          }}
-        />
+        {/* Removed Background Image */}
 
         {/* Subtle Scanned Layer */}
         <div className="absolute inset-0 bg-black/60 z-0" />
@@ -310,6 +325,6 @@ export default function LoginPage() {
           </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

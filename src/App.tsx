@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'motion/react';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -13,10 +14,12 @@ import AdminDashboard from './pages/AdminDashboard';
 import LiveDeliveryPage from './pages/LiveDeliveryPage';
 import AgentsDashboard from './pages/AgentsDashboard';
 
-export default function App() {
+function AnimatedRoutes() {
+  const location = useLocation();
+  
   return (
-    <Router>
-      <Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login/:portal" element={<LoginPage />} />
         <Route path="/register/:portal" element={<RegisterPage />} />
@@ -26,6 +29,14 @@ export default function App() {
         <Route path="/dashboard/agent/:role?" element={<AgentsDashboard />} />
         <Route path="/delivery/:id" element={<LiveDeliveryPage />} />
       </Routes>
+    </AnimatePresence>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AnimatedRoutes />
     </Router>
   );
 }

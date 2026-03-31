@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 import { LayoutDashboard, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -51,7 +51,13 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black text-white selection:bg-white/20 overflow-hidden font-sans">
+    <motion.div 
+      initial={{ opacity: 0, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, filter: 'blur(10px)' }}
+      transition={{ duration: 0.5 }}
+      className="fixed inset-0 bg-black text-white selection:bg-white/20 overflow-hidden font-sans"
+    >
       {/* Header - Minimal and disappears on expansion */}
       <AnimatePresence>
         {!expandedId && (
@@ -85,7 +91,7 @@ export default function LandingPage() {
           />
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Utensils, HeartHandshake, ShieldCheck, ArrowLeft, User, Mail, Phone, MapPin, Lock, Check } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { Utensils, HeartHandshake, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { RestaurantRegistration } from '@/components/registration/RestaurantRegistration';
+import { NgoRegistration } from '@/components/registration/NgoRegistration';
+import { AgentRegistration } from '@/components/registration/AgentRegistration';
 
 export default function RegisterPage() {
   const { portal } = useParams<{ portal: string }>();
@@ -86,9 +89,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div
+    <motion.div
       ref={containerRef}
       onMouseMove={handleMouseMove}
+      initial={{ opacity: 0, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, filter: 'blur(10px)' }}
+      transition={{ duration: 0.5 }}
       className="min-h-screen bg-black text-white flex items-center justify-center relative overflow-hidden font-sans"
     >
       {/* Brand Logo - Top Left */}
@@ -113,17 +120,7 @@ export default function RegisterPage() {
             )
           }}
         />
-        {/* Thematic Background Image with Massive Blur */}
-        <motion.div
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 2 }}
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${config.bgImage})`,
-            filter: 'blur(20px) brightness(0.4)'
-          }}
-        />
+        {/* Removed Background Image */}
       </div>
 
       {/* Main Layout Container */}
@@ -163,129 +160,12 @@ export default function RegisterPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleRegister} className="space-y-5">
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    visible: { transition: { staggerChildren: 0.05 } }
-                  }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                >
-                  <div className="space-y-4">
-                    <motion.div variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }} className="relative group">
-                      <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
-                      <input
-                        type="text"
-                        placeholder="Full Name"
-                        required
-                        className={cn(
-                          "w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 transition-all text-sm",
-                          config.ring
-                        )}
-                      />
-                    </motion.div>
-                    <motion.div variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }} className="relative group">
-                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
-                      <input
-                        type="email"
-                        placeholder="Email Address"
-                        required
-                        className={cn(
-                          "w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 transition-all text-sm",
-                          config.ring
-                        )}
-                      />
-                    </motion.div>
-                    <motion.div variants={{ hidden: { opacity: 0, x: -10 }, visible: { opacity: 1, x: 0 } }} className="relative group">
-                      <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
-                      <input
-                        type="tel"
-                        placeholder="Phone Number"
-                        required
-                        className={cn(
-                          "w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 transition-all text-sm",
-                          config.ring
-                        )}
-                      />
-                    </motion.div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <motion.div variants={{ hidden: { opacity: 0, x: 10 }, visible: { opacity: 1, x: 0 } }} className="relative group">
-                      <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
-                      <input
-                        type="text"
-                        placeholder="Primary Address"
-                        required
-                        className={cn(
-                          "w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 transition-all text-sm",
-                          config.ring
-                        )}
-                      />
-                    </motion.div>
-                    <motion.div variants={{ hidden: { opacity: 0, x: 10 }, visible: { opacity: 1, x: 0 } }} className="relative group">
-                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
-                      <input
-                        type="password"
-                        placeholder="Create Password"
-                        required
-                        className={cn(
-                          "w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 transition-all text-sm",
-                          config.ring
-                        )}
-                      />
-                    </motion.div>
-                    <motion.div variants={{ hidden: { opacity: 0, x: 10 }, visible: { opacity: 1, x: 0 } }} className="relative group">
-                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
-                      <input
-                        type="password"
-                        placeholder="Confirm Password"
-                        required
-                        className={cn(
-                          "w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 transition-all text-sm",
-                          config.ring
-                        )}
-                      />
-                    </motion.div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex items-center gap-3 px-2 pt-4"
-                >
-                  <div className="relative w-5 h-5">
-                    <input type="checkbox" className="peer absolute inset-0 opacity-0 cursor-pointer" required />
-                    <div className="w-5 h-5 rounded-md border border-white/20 bg-white/5 peer-checked:bg-white transition-all flex items-center justify-center">
-                      <Check className="w-3 h-3 text-black opacity-0 peer-checked:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <span className="text-xs text-white/50 leading-tight">
-                    I agree to the <button type="button" className="text-white hover:underline">Terms of Service</button> and <button type="button" className="text-white hover:underline">Privacy Policy</button> regarding food safety.
-                  </span>
-                </motion.div>
-
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 }}
-                  type="submit"
-                  disabled={isLoading}
-                  className={cn(
-                    "w-full py-5 rounded-2xl text-white font-black text-sm tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-xl uppercase mt-4",
-                    config.btn
-                  )}
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>REGISTER ORGANIZATION <Icon className="w-4 h-4" /></>
-                  )}
-                </motion.button>
-              </form>
+              {/* Render Specific Flow Based on Portal */}
+              <div className="w-full">
+                {portal === 'restaurant' && <RestaurantRegistration />}
+                {portal === 'ngo' && <NgoRegistration />}
+                {portal === 'agent' && <AgentRegistration />}
+              </div>
 
               <p className="mt-10 text-center text-sm font-medium text-white/40">
                 Already have an account?{' '}
@@ -300,6 +180,6 @@ export default function RegisterPage() {
           </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

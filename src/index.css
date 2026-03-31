@@ -23,7 +23,10 @@
   }
   
   .glass-dark {
-    @apply bg-black/40 backdrop-blur-2xl border border-white/5;
+    @apply bg-white/[0.02] backdrop-blur-3xl border border-white/5 shadow-2xl transition-all;
+  }
+  .glass-dark:hover {
+    @apply bg-white/[0.03] border-white/10;
   }
   
   .text-gradient {

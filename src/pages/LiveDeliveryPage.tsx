@@ -1,20 +1,60 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleMap, useJsApiLoader, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
 import {
   ArrowLeft, MapPin, Navigation, Package, Clock,
   CheckCircle2, Phone, MessageSquare, Truck, ShieldCheck,
-  Zap, Activity, Globe, AlertCircle
+  Zap, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const containerStyle = {
+    width: '100%',
+    height: '100%'
+};
+
+// Generic demonstration coordinates
+const center = { lat: 28.6139, lng: 77.2090 };
+const origin = { lat: 28.5355, lng: 77.2410 };
+const destination = { lat: 28.6505, lng: 77.2303 };
+
+const darkMapStyle = [
+  { elementType: "geometry", stylers: [{ color: "#050505" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#000000" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#757575" }] },
+  { featureType: "administrative.country", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#181818" }] },
+  { featureType: "road", elementType: "geometry.fill", stylers: [{ color: "#2c2c2c" }] },
+  { featureType: "road.local", elementType: "geometry.fill", stylers: [{ color: "#1f1f1f" }] },
+  { featureType: "transit", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#000000" }] }
+];
 
 export default function LiveDeliveryPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState('status');
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  
+  const { isLoaded } = useJsApiLoader({
+      id: 'google-map-script',
+      googleMapsApiKey: (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY || ""
+  });
 
-  // Simulate delivery progress
+  const directionsCallback = (
+      result: google.maps.DirectionsResult | null,
+      status: google.maps.DirectionsStatus
+  ) => {
+      if (status === 'OK' && result) {
+          setDirections(result);
+      }
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -50,7 +90,7 @@ export default function LiveDeliveryPage() {
       <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-500/5 blur-[120px] rounded-full pointer-events-none" />
 
       {/* Left Interface - Interactive Command Center */}
-      <div className="w-full md:w-[480px] glass-dark border-r border-white/5 flex flex-col h-screen z-30 relative shadow-2xl">
+      <div className="w-full md:w-[480px] bg-white/[0.02] backdrop-blur-3xl border-r border-white/5 flex flex-col h-screen z-30 relative shadow-2xl">
         {/* Header Block */}
         <div className="p-8 border-b border-white/5 bg-black/40 backdrop-blur-3xl">
           <div className="flex items-center justify-between mb-8">
@@ -63,13 +103,13 @@ export default function LiveDeliveryPage() {
             </motion.button>
             <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-400 tracking-widest uppercase italic">LIVE SIGNAL</span>
+              <span className="text-[10px] font-black text-emerald-400 tracking-widest uppercase">LIVE SIGNAL</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-4xl font-display font-black tracking-tighter italic">DELIVERY RE-0428</h1>
-            <p className="text-[10px] font-bold text-white/30 tracking-[0.4em] uppercase">Hyper-Local Food Logistics</p>
+            <h1 className="text-4xl font-display font-black tracking-tighter uppercase">DELIVERY RE-0428</h1>
+            <p className="text-[10px] font-semibold text-white/30 tracking-[0.4em] uppercase">Hyper-Local Food Logistics</p>
           </div>
         </div>
 
@@ -89,10 +129,10 @@ export default function LiveDeliveryPage() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-display font-black tracking-tight uppercase italic text-white/90">
+              <h3 className="text-2xl font-display font-black tracking-tight uppercase text-white/90">
                 {getStatus()}
               </h3>
-              <div className="flex items-center justify-center gap-4 text-xs font-black text-white/30 tracking-widest uppercase">
+              <div className="flex items-center justify-center gap-4 text-xs font-semibold text-white/30 tracking-widest uppercase">
                 <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> 12 MINS REMAINING</span>
                 <span className="w-1 h-1 rounded-full bg-white/10" />
                 <span className="flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> 2.4 KM / HR</span>
@@ -129,7 +169,7 @@ export default function LiveDeliveryPage() {
                       <Icon className="w-5 h-5" />
                     </motion.div>
                     <span className={cn(
-                      "text-[9px] font-black tracking-widest uppercase transition-colors duration-500",
+                      "text-[9px] font-semibold tracking-widest uppercase transition-colors duration-500",
                       isReached ? "text-white" : "text-white/20"
                     )}>{step.label}</span>
                   </div>
@@ -156,7 +196,7 @@ export default function LiveDeliveryPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-black text-white/30 tracking-[0.3em] uppercase mb-1">{node.label}</p>
                   <p className="font-display font-black text-lg tracking-tight truncate">{node.name}</p>
-                  <p className="text-xs font-bold text-white/40 mt-1 truncate">{node.addr}</p>
+                  <p className="text-xs font-semibold text-white/40 mt-1 truncate">{node.addr}</p>
                 </div>
               </motion.div>
             ))}
@@ -175,102 +215,71 @@ export default function LiveDeliveryPage() {
       </div>
 
       {/* Right Visualization - Tactical Map Overlay */}
-      <div className="flex-1 relative bg-black overflow-hidden min-h-[50vh] md:min-h-screen">
-        {/* Cinematic Map Background */}
-        <div
-          className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=1920')] bg-cover bg-center"
-          style={{ filter: 'grayscale(1) contrast(1.5) brightness(0.6)' }}
-        />
+      <div className="flex-1 relative bg-[#050505] overflow-hidden min-h-[50vh] md:min-h-screen">
+        
+        {/* Real Google Map Integration */}
+        <div className="absolute inset-0">
+          {isLoaded ? (
+            <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={center}
+                zoom={12}
+                options={{
+                    styles: darkMapStyle,
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                }}
+            >
+                {!directions && (
+                    <DirectionsService
+                        options={{
+                            destination: destination,
+                            origin: origin,
+                            travelMode: google.maps.TravelMode.DRIVING
+                        }}
+                        callback={directionsCallback}
+                    />
+                )}
+                {directions && (
+                    <DirectionsRenderer
+                        options={{
+                            directions: directions,
+                            polylineOptions: {
+                                strokeColor: "#f97316", // Orange delivery line matching theme
+                                strokeWeight: 6,
+                                strokeOpacity: 0.8
+                            },
+                        }}
+                    />
+                )}
+            </GoogleMap>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-white/50 space-y-4">
+                <Globe className="w-16 h-16 animate-pulse" />
+                <div className="font-black tracking-widest text-sm uppercase">INITIALIZING SATELLITE LINK...</div>
+            </div>
+          )}
+        </div>
 
         {/* Tactical Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]/60" />
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-          <Globe className="w-[800px] h-[800px] animate-pulse" />
-        </div>
-
-        {/* Global Grid Overlay */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }}
-        />
-
-        {/* Precision Route Visualization */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'drop-shadow(0 0 15px rgba(20,184,166,0.6))' }}>
-          <motion.path
-            d="M 30% 70% Q 50% 50% 70% 30%"
-            fill="none"
-            stroke="#14b8a6"
-            strokeWidth="5"
-            strokeDasharray="2 12"
-            strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 2, ease: "easeInOut" }}
-            className="animate-[tactical_30s_linear_infinite]"
-          />
-        </svg>
-
-        {/* Mission Nodes */}
-        <div className="absolute top-[30%] left-[70%] -translate-x-1/2 -translate-y-1/2 group">
-          <div className="absolute -inset-8 bg-teal-500/10 blur-xl rounded-full scale-0 group-hover:scale-100 transition-transform duration-500" />
-          <div className="relative flex flex-col items-center">
-            <div className="px-4 py-2 glass-dark rounded-xl border border-white/20 text-[9px] font-black mb-4 shadow-2xl tracking-widest uppercase">
-              DESTINATION
-            </div>
-            <div className="w-8 h-8 rounded-full bg-teal-500 border-8 border-black shadow-[0_0_30px_rgba(20,184,166,1)]" />
-          </div>
-        </div>
-
-        <div className="absolute top-[70%] left-[30%] -translate-x-1/2 -translate-y-1/2 group">
-          <div className="absolute -inset-8 bg-orange-500/10 blur-xl rounded-full scale-0 group-hover:scale-100 transition-transform duration-500" />
-          <div className="relative flex flex-col items-center">
-            <div className="px-4 py-2 glass-dark rounded-xl border border-white/20 text-[9px] font-black mb-4 shadow-2xl tracking-widest uppercase">
-              ORIGIN
-            </div>
-            <div className="w-8 h-8 rounded-full bg-orange-500 border-8 border-black shadow-[0_0_30px_rgba(249,115,22,1)]" />
-          </div>
-        </div>
-
-        {/* Real-time Asset Tracking */}
-        <motion.div
-          className="absolute w-14 h-14 z-20"
-          style={{
-            top: `${70 - (progress * 0.4)}%`,
-            left: `${30 + (progress * 0.4)}%`,
-            transform: 'translate(-50%, -50%)'
-          }}
-        >
-          <div className="absolute inset-0 bg-white/20 blur-xl rounded-full animate-pulse" />
-          <div className="w-full h-full rounded-2xl bg-white flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.4)] border border-white/20 relative">
-            <Truck className="w-7 h-7 text-black" />
-            <motion.div
-              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -inset-4 border border-white/30 rounded-full"
-            />
-          </div>
-        </motion.div>
-
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent pointer-events-none" />
+        
         {/* Tactical UI Elements */}
-        <div className="absolute bottom-10 right-10 flex gap-4">
+        <div className="absolute bottom-10 right-10 flex gap-4 pointer-events-none z-10">
           {[
             { label: 'LAT', val: '28.6139° N' },
             { label: 'LNG', val: '77.2090° E' },
             { label: 'ALT', val: '216m' }
           ].map((p, i) => (
-            <div key={i} className="glass-dark px-6 py-4 rounded-2xl border border-white/5 space-y-1">
+            <div key={i} className="bg-white/[0.02] backdrop-blur-3xl px-6 py-4 rounded-2xl border border-white/5 space-y-1 shadow-2xl">
               <p className="text-[8px] font-black text-white/20 tracking-[0.2em]">{p.label}</p>
-              <p className="text-xs font-bold text-white/60 font-mono tracking-tight">{p.val}</p>
+              <p className="text-xs font-semibold text-white/60 font-mono tracking-tight">{p.val}</p>
             </div>
           ))}
         </div>
       </div>
 
       <style>{`
-        @keyframes tactical {
-          to {
-            stroke-dashoffset: -1000;
-          }
-        }
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }

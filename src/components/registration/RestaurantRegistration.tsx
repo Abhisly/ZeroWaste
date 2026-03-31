@@ -1,0 +1,350 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Mail, Phone, Lock, FileText, MapPin, Building, Clock, Utensils, Check } from 'lucide-react';
+import { Stepper } from '../Stepper';
+import { FileUpload } from '../FileUpload';
+import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+
+const STEPS = ['Basic Info', 'Business Details', 'Documents'];
+
+export function RestaurantRegistration() {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // OTP State
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    restaurantName: '',
+    ownerName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    restaurantType: 'Veg',
+    cuisineType: '',
+    fssaiLicense: '',
+    gstNumber: '',
+    yearsOfOperation: '',
+    declaration: false,
+  });
+
+  const updateForm = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const validateStep = () => {
+    if (currentStep === 0) {
+      return formData.restaurantName && formData.ownerName && formData.email && formData.phone && formData.password && formData.password === formData.confirmPassword && isOtpVerified;
+    }
+    if (currentStep === 1) {
+      return formData.restaurantType && formData.fssaiLicense && formData.yearsOfOperation;
+    }
+    if (currentStep === 2) {
+      return formData.declaration;
+    }
+    return true;
+  };
+
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      setOtpError('Please enter an email address first.');
+      return;
+    }
+    setIsSendingOtp(true);
+    setOtpError('');
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsOtpSent(true);
+      } else {
+        setOtpError(data.message || 'Failed to send OTP');
+      }
+    } catch (err) {
+      setOtpError('Server error while sending OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp) {
+      setOtpError('Please enter the OTP.');
+      return;
+    }
+    setIsVerifyingOtp(true);
+    setOtpError('');
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, otp })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsOtpVerified(true);
+        setIsOtpSent(false);
+      } else {
+        setOtpError(data.message || 'Invalid OTP');
+      }
+    } catch (err) {
+      setOtpError('Server error while verifying OTP');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+
+  const handleNext = () => {
+    if (validateStep()) {
+      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    } else {
+      alert("Please fill all required fields correctly.");
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateStep()) {
+       alert("Please agree to the declaration and complete uploads.");
+       return;
+    }
+    setIsLoading(true);
+    // Simulate API Call
+    setTimeout(() => {
+      setIsLoading(false);
+      setIsSuccess(true);
+    }, 2000);
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.4 } },
+    exit: { opacity: 0, x: -20, transition: { duration: 0.3 } }
+  };
+
+  if (isSuccess) {
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mb-6">
+          <Check className="w-10 h-10 text-orange-400" />
+        </div>
+        <h2 className="text-3xl font-bold mb-4">Registration Submitted!</h2>
+        <p className="text-white/60 mb-8 max-w-md">
+          Your application is currently <strong className="text-orange-400">Pending Verification</strong>.
+          Our agents will review your documents shortly. You will be able to log in once approved.
+        </p>
+        <button 
+          onClick={() => navigate('/')}
+          className="bg-white text-black px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-white/90 transition-colors"
+        >
+          Return to Home
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <Stepper steps={STEPS} currentStep={currentStep} />
+      
+      <div className="mt-8 bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8">
+        <AnimatePresence mode="wait">
+          {currentStep === 0 && (
+            <motion.div key="step0" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+               <h3 className="text-xl font-bold mb-4 border-b border-white/10 pb-2">Basic Information</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Restaurant Name *</label>
+                   <div className="relative group">
+                     <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                     <input type="text" value={formData.restaurantName} onChange={e => updateForm('restaurantName', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="E.g. The Green Cafe" required />
+                   </div>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Owner / Manager Name *</label>
+                   <div className="relative group">
+                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                     <input type="text" value={formData.ownerName} onChange={e => updateForm('ownerName', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="E.g. John Doe" required />
+                   </div>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Email Address (OTP Verification) *</label>
+                   <div className="relative group flex gap-2">
+                     <div className="relative flex-1">
+                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                       <input 
+                         type="email" 
+                         value={formData.email} 
+                         disabled={isOtpVerified}
+                         onChange={e => {
+                           updateForm('email', e.target.value);
+                           setIsOtpVerified(false);
+                           setIsOtpSent(false);
+                           setOtpError('');
+                         }} 
+                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none disabled:opacity-50" 
+                         placeholder="partner@restaurant.com" 
+                         required 
+                       />
+                     </div>
+                     {!isOtpVerified ? (
+                       <button type="button" onClick={handleSendOtp} disabled={isSendingOtp} className="bg-orange-500/20 text-orange-400 px-4 rounded-xl text-xs font-bold hover:bg-orange-500/30 transition-colors whitespace-nowrap disabled:opacity-50">
+                         {isSendingOtp ? 'Sending...' : (isOtpSent ? 'Resend OTP' : 'Send OTP')}
+                       </button>
+                     ) : (
+                       <div className="bg-green-500/20 text-green-400 px-4 flex items-center justify-center rounded-xl text-xs font-bold whitespace-nowrap">
+                         <Check className="w-4 h-4 mr-1"/> Verified
+                       </div>
+                     )}
+                   </div>
+                   {otpError && <p className="text-xs text-red-500 px-1">{otpError}</p>}
+                   {isOtpSent && !isOtpVerified && (
+                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-2 flex gap-2">
+                       <input 
+                         type="text" 
+                         value={otp} 
+                         onChange={e => setOtp(e.target.value)} 
+                         placeholder="Enter 6-digit OTP" 
+                         className="flex-1 bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-white focus:bg-white/10 outline-none text-center tracking-[0.5em] font-mono text-lg" 
+                         maxLength={6} 
+                       />
+                       <button type="button" onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="bg-green-500 hover:bg-green-600 text-white px-6 rounded-xl text-xs font-bold transition-colors shadow-lg shadow-green-500/20 disabled:opacity-50">
+                         {isVerifyingOtp ? 'Verifying...' : 'Verify'}
+                       </button>
+                     </motion.div>
+                   )}
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Phone Number *</label>
+                   <div className="relative group">
+                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                     <input type="tel" value={formData.phone} onChange={e => updateForm('phone', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="+91 9876543210" required />
+                   </div>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Password *</label>
+                   <div className="relative group">
+                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                     <input type="password" value={formData.password} onChange={e => updateForm('password', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="••••••••" required />
+                   </div>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Confirm Password *</label>
+                   <div className="relative group">
+                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                     <input type="password" value={formData.confirmPassword} onChange={e => updateForm('confirmPassword', e.target.value)} className={cn("w-full bg-white/5 border rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none", formData.password !== formData.confirmPassword && formData.confirmPassword ? "border-red-500/50" : "border-white/10")} placeholder="••••••••" required />
+                   </div>
+                 </div>
+               </div>
+            </motion.div>
+          )}
+
+          {currentStep === 1 && (
+            <motion.div key="step1" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+               <h3 className="text-xl font-bold mb-4 border-b border-white/10 pb-2">Business Details</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Restaurant Type *</label>
+                   <select value={formData.restaurantType} onChange={e => updateForm('restaurantType', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:bg-white/10 transition-all outline-none appearance-none">
+                     <option value="Veg" className="bg-neutral-900">Pure Veg</option>
+                     <option value="Non-Veg" className="bg-neutral-900">Non-Veg</option>
+                     <option value="Both" className="bg-neutral-900">Both</option>
+                   </select>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">Cuisine Type</label>
+                   <input type="text" value={formData.cuisineType} onChange={e => updateForm('cuisineType', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="Indian, Chinese, Italian..." />
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">FSSAI License Number *</label>
+                   <div className="relative group">
+                     <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                     <input type="text" value={formData.fssaiLicense} onChange={e => updateForm('fssaiLicense', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="14 Digit FSSAI No." required />
+                   </div>
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-xs text-white/50 px-1">GST Number (Optional)</label>
+                   <input type="text" value={formData.gstNumber} onChange={e => updateForm('gstNumber', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="15 Digit GST No." />
+                 </div>
+                 <div className="space-y-1 md:col-span-2">
+                   <label className="text-xs text-white/50 px-1">Years of Operation *</label>
+                   <input type="number" min="0" value={formData.yearsOfOperation} onChange={e => updateForm('yearsOfOperation', e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:bg-white/10 transition-all outline-none" placeholder="E.g. 5" required />
+                 </div>
+               </div>
+            </motion.div>
+          )}
+
+          {currentStep === 2 && (
+            <motion.div key="step2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-6">
+               <h3 className="text-xl font-bold mb-2 border-b border-white/10 pb-2">Document Uploads</h3>
+               <p className="text-sm text-white/50 mb-6">Upload mandatory documents for verification. Max 5MB per file.</p>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <FileUpload label="FSSAI License Certificate" required onFileSelect={(f) => console.log(f)} />
+                 <FileUpload label="Owner ID Proof (Aadhar / PAN)" required onFileSelect={(f) => console.log(f)} />
+                 <FileUpload label="Business Registration Cert." onFileSelect={(f) => console.log(f)} />
+                 <FileUpload label="Restaurant Images (Kitchen/Entry)" accept="image/*" onFileSelect={(f) => console.log(f)} />
+               </div>
+
+               <div className="mt-8 bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 flex items-start gap-3">
+                 <input type="checkbox" id="declaration" checked={formData.declaration} onChange={e => updateForm('declaration', e.target.checked)} className="mt-1 accent-orange-500 w-4 h-4" />
+                 <label htmlFor="declaration" className="text-sm text-white/80 cursor-pointer">
+                   <strong>Declaration:</strong> I confirm that all information provided is accurate and the food provided for donation will be safe, hygienic, and consumable. I agree to the platform's terms of service and quality guidelines.
+                 </label>
+               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between items-center mt-8 pt-6 border-t border-white/10">
+          <button 
+            type="button" 
+            onClick={handleBack}
+            className={cn("px-6 py-2 rounded-xl text-sm font-bold transition-all", currentStep === 0 ? "opacity-0 pointer-events-none" : "hover:bg-white/10 text-white")}
+          >
+            BACK
+          </button>
+          
+          {currentStep < STEPS.length - 1 ? (
+            <button 
+              type="button" 
+              onClick={handleNext}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2 rounded-xl text-sm font-bold tracking-wider transition-colors shadow-lg shadow-orange-500/20"
+            >
+              CONTINUE
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="bg-green-500 hover:bg-green-600 text-white px-8 py-2 rounded-xl text-sm font-bold tracking-wider transition-all shadow-lg shadow-green-500/20 flex items-center gap-2 active:scale-95"
+            >
+              {isLoading ? <span className="animate-pulse">SUBMITTING...</span> : 'SUBMIT APPLICATION'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
