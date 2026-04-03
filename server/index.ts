@@ -18,13 +18,18 @@ const { Pool } = pg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Required for Supabase in many environments
-  }
+    rejectUnauthorized: false
+  },
+  connectionTimeoutMillis: 5000, // 5 seconds timeout
 });
+
+console.log('Attempting to connect to PostgreSQL at:', process.env.DATABASE_URL?.split('@')[1]); // Log host part only for safety
 
 pool.connect((err, client, release) => {
   if (err) {
-    return console.error('Error acquiring client', err.stack);
+    console.error('PostgreSQL Connection Error:', err.message);
+    console.error('Check if your DATABASE_URL is correct and if requests are allowed by your firewall.');
+    return;
   }
   console.log('Successfully connected to Supabase PostgreSQL');
   release();
@@ -80,7 +85,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
   otpStore.set(email, { otp, expiresAt });
 
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"ZeroWaste" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Verify your ZeroWaste Account',
@@ -94,11 +99,15 @@ app.post('/api/auth/send-otp', async (req, res) => {
         </div>
       `,
     });
-    console.log(`OTP sent to ${email}: ${otp}`);
+    console.log(`OTP sent successfully to ${email}. OTP: ${otp}. MessageId: ${info.messageId}`);
+    console.log('SMTP Response:', info.response);
     res.json({ success: true, message: 'OTP sent successfully' });
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).json({ success: false, message: 'Failed to send OTP email' });
+  } catch (error: any) {
+    console.error('Critical Error sending email:', error.message);
+    if (error.code === 'EAUTH') {
+      console.error('Authentication failed. Check your EMAIL_USER and EMAIL_PASS.');
+    }
+    res.status(500).json({ success: false, message: 'Failed to send OTP email: ' + error.message });
   }
 });
 

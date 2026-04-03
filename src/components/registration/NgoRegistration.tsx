@@ -21,6 +21,7 @@ export function NgoRegistration() {
   const [otpError, setOtpError] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [verificationSuccess, setVerificationSuccess] = useState('');
 
   const [formData, setFormData] = useState({
     ngoName: '',
@@ -89,8 +90,14 @@ export function NgoRegistration() {
       if (data.success) {
         setIsOtpVerified(true);
         setIsOtpSent(false);
+        setVerificationSuccess('OTP Verified Successfully!');
+        // Automatically progress to next step after success message
+        setTimeout(() => {
+          setVerificationSuccess('');
+          setCurrentStep(1);
+        }, 1500);
       } else {
-        setOtpError(data.message || 'Invalid OTP');
+        setOtpError(data.message || 'Invalid OTP. Please try again.');
       }
     } catch (err) {
       setOtpError('Server error while verifying OTP');
@@ -199,7 +206,16 @@ export function NgoRegistration() {
                        </div>
                      )}
                    </div>
-                   {otpError && <p className="text-xs text-red-500 px-1">{otpError}</p>}
+                   {otpError && (
+                      <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="text-xs text-red-500 px-1 mt-1 flex items-center gap-1">
+                        <span className="w-1 h-1 bg-red-500 rounded-full"></span> {otpError}
+                      </motion.p>
+                    )}
+                    {verificationSuccess && (
+                      <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="text-xs text-green-500 px-1 mt-1 flex items-center gap-1 font-bold">
+                        <Check className="w-3 h-3" /> {verificationSuccess}
+                      </motion.p>
+                    )}
                    {isOtpSent && !isOtpVerified && (
                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pt-2 flex gap-2">
                        <input 

@@ -1,0 +1,648 @@
+================================================================================
+                    ZEROWASTE APPLICATION - COMPLETE TECHNICAL DOCUMENTATION
+                           (For Viva / Project Presentation)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. INTRODUCTION OF THE APPLICATION
+--------------------------------------------------------------------------------
+
+ZeroWaste is a full-stack web application built to bridge the gap between food
+surplus and food scarcity. It is a multi-portal platform where restaurants that
+have excess or leftover food can donate it, NGOs (Non-Governmental Organizations)
+can request and collect that food, and delivery agents physically transport the
+food from the restaurant to the NGO.
+
+The application also has an Admin portal for overseeing all operations, a
+Verification Agent portal for verifying registrations and documents, and a
+Live Delivery tracking feature using Google Maps to track ongoing deliveries
+in real time.
+
+The entire system runs on a React-based frontend (TypeScript + Vite), a
+Node.js/Express backend (TypeScript), and uses a Supabase-hosted PostgreSQL
+database for persistent data storage.
+
+
+--------------------------------------------------------------------------------
+2. PURPOSE OF THE APPLICATION
+--------------------------------------------------------------------------------
+
+- To reduce food waste by making it easy for restaurants to list surplus food
+  for donation.
+- To help NGOs find and request available food donations quickly.
+- To manage the complete food donation lifecycle: from listing -> request ->
+  verification -> assignment -> delivery -> completion.
+- To provide role-based dashboards so each type of user (Restaurant, NGO,
+  Delivery Agent, Admin, Verification Agent) sees only what is relevant to them.
+- To ensure secure user registration via email-based OTP (One-Time Password)
+  verification, preventing fake accounts.
+- To provide real-time map-based tracking so both donors and recipients can
+  monitor active deliveries.
+
+
+--------------------------------------------------------------------------------
+3. WHY EACH MODULE IS CREATED (MODULE-WISE EXPLANATION)
+--------------------------------------------------------------------------------
+
+a) Landing Page Module:
+   - Entry point of the application.
+   - Explains what ZeroWaste does and provides portal selection (Restaurant,
+     NGO, Admin, Agent).
+   - Routes users to the correct login or register page based on their role.
+
+b) Login / Register Module:
+   - Handles authentication for all user types (Restaurant, NGO, Agent, Admin).
+   - Supports role-based login so the correct dashboard loads after login.
+   - Registration includes email OTP verification to validate real email addresses.
+
+c) Restaurant Dashboard Module:
+   - Allows restaurants to post food donations (type, quantity, expiry).
+   - Shows pending, accepted, and completed donations.
+   - Lets restaurants track which NGO accepted their donation and the delivery status.
+
+d) NGO Dashboard Module:
+   - Lets NGOs browse available food donations from nearby restaurants.
+   - Allows NGOs to accept or decline donations.
+   - Shows accepted donations and current delivery statuses.
+
+e) Admin Dashboard Module:
+   - Provides full visibility over all operations: users, donations, deliveries.
+   - Allows admin to assign delivery agents to accepted donations.
+   - Manages all platform data centrally.
+
+f) Delivery Agent Dashboard Module:
+   - Shows delivery tasks assigned to the agent.
+   - Allows agents to update delivery status (Picked Up, In Transit, Delivered).
+   - Integrates with the Live Delivery Page for real-time map view.
+
+g) Verification Agent Dashboard Module:
+   - Shows newly registered users (Restaurants, NGOs) pending verification.
+   - Allows verification agents to view submitted documents using the Document
+     Viewer Modal and approve or reject registrations.
+
+h) Live Delivery Page Module:
+   - Shows an active delivery on a Google Maps interface.
+   - Displays the route from pickup (restaurant) to drop-off (NGO) location.
+   - Can be accessed by both the NGO and restaurant to track the delivery.
+
+i) OTP Verification System (Backend Module):
+   - Backend sends a 6-digit OTP to the user's email using Nodemailer + Gmail.
+   - OTP is stored in-memory (Map data structure) with a 5-minute expiry.
+   - Frontend verifies the entered OTP with the backend before completing
+     registration.
+
+j) DashboardLayout Component:
+   - A shared layout wrapper used by all dashboards.
+   - Provides the sidebar navigation, header, and logout logic.
+   - Eliminates the need to duplicate navigation code in every dashboard.
+
+k) Document Viewer Modal Component:
+   - Allows the Verification Agent to view uploaded documents (PDFs, images)
+     directly inside the app without downloading.
+   - Uses an iframe or image tag to render the file inline.
+
+l) File Upload Component:
+   - Re-usable component for uploading files (e.g., registration documents,
+     FSSAI certificates, NGO registration proofs).
+   - Used across multiple registration forms.
+
+m) Stepper Component:
+   - A multi-step form component used during registration.
+   - Guides the user through different stages: Basic Info -> Document Upload ->
+     OTP Verification -> Submit.
+
+n) Registration Sub-Components (Restaurant, NGO, Agent):
+   - Each type of user has its own registration form collecting relevant details.
+   - Restaurant Registration: Name, address, FSSAI number, document upload.
+   - NGO Registration: Organization name, address, registration proof.
+   - Agent Registration: Name, contact, role (Delivery/Verification).
+
+
+--------------------------------------------------------------------------------
+4. STEP-BY-STEP DEVELOPMENT PROCESS (FROM SETUP TO EXECUTION)
+--------------------------------------------------------------------------------
+
+Step 1: Project Initialization
+   - Created a new Vite project with React and TypeScript template:
+     npm create vite@latest zerowaste -- --template react-ts
+   - Installed all required dependencies using npm install.
+
+Step 2: Project Structure Setup
+   - Organized code into: src/pages, src/components, src/lib, server/
+   - Created separate files for each page and component.
+
+Step 3: Frontend Routing
+   - Configured React Router DOM (react-router-dom v7) in App.tsx.
+   - Defined routes for all pages: Landing, Login, Register, Dashboards,
+     Live Delivery.
+   - Used dynamic routes like /login/:portal and /dashboard/agent/:role
+     to support multiple portals with single components.
+
+Step 4: Component Development
+   - Built reusable components: DashboardLayout, Stepper, FileUpload,
+     DocumentViewerModal.
+   - Built all page components: LandingPage, LoginPage, RegisterPage,
+     and all dashboards.
+
+Step 5: Backend Setup
+   - Created server/index.ts using Express.js.
+   - Added middleware: cors() and express.json().
+   - Connected to Supabase PostgreSQL using the pg (node-postgres) library
+     with connection pooling.
+
+Step 6: OTP System Implementation
+   - Integrated Nodemailer with Gmail SMTP for sending OTP emails.
+   - Implemented /api/auth/send-otp and /api/auth/verify-otp endpoints.
+   - Used an in-memory Map to store OTPs with expiry timestamps.
+
+Step 7: Google Maps Integration
+   - Installed @react-google-maps/api library.
+   - Integrated Google Maps into LiveDeliveryPage and MapView components.
+   - Rendered route polylines between pickup and delivery coordinates.
+
+Step 8: Environment Variable Configuration
+   - Stored sensitive values (API keys, DB URL, email credentials) in .env file.
+   - Used dotenv on the backend and Vite's loadEnv on the frontend to safely
+     load these variables.
+
+Step 9: Charts and Analytics
+   - Used Recharts library to render pie charts and bar charts in the Admin
+     and NGO dashboards for donation and delivery statistics.
+
+Step 10: Running the Application
+   - Frontend: npm run dev  (starts Vite dev server on port 3000)
+   - Backend: npm run server  (starts Express server on port 5000)
+   - Both can be run together using the concurrently package.
+
+
+--------------------------------------------------------------------------------
+5. TECHNICAL APPROACH USED IN BUILDING THE APPLICATION
+--------------------------------------------------------------------------------
+
+- Component-Based Architecture:
+  The application is broken into small, reusable components. Each page is a
+  separate component, and shared UI elements (like sidebar layout) are extracted
+  into reusable components.
+
+- Role-Based Routing:
+  Instead of creating separate applications for each user type, we used
+  dynamic route parameters (:portal, :role) so the same Login and Register
+  components handle all user types based on URL context.
+
+- Single Page Application (SPA):
+  React Router DOM is used for client-side routing. The page never fully
+  reloads; only the visible component changes. This makes the app fast and
+  seamless.
+
+- REST API Architecture:
+  The backend exposes RESTful API endpoints under /api/. The frontend
+  communicates with the backend using fetch() calls or Axios.
+
+- Stateless OTP Verification:
+  OTPs are generated on the server, stored temporarily in a Map with expiry,
+  and cleared after use or expiry. This is a lightweight, stateless approach
+  that avoids database overhead for temporary tokens.
+
+- Database Connection Pooling:
+  Instead of creating a new database connection for each request, we use
+  pg.Pool which manages a pool of reusable connections to PostgreSQL,
+  improving performance under load.
+
+- Animated Page Transitions:
+  AnimatePresence from the motion/react library is used to animate route
+  transitions, giving the app a smooth, polished feel.
+
+- TypeScript Throughout:
+  Both frontend and backend are written in TypeScript (.tsx and .ts files).
+  This adds type safety, catches errors at compile time, and improves code
+  maintainability.
+
+
+--------------------------------------------------------------------------------
+6. FRONTEND TECHNICAL DETAILS
+--------------------------------------------------------------------------------
+
+Language & Typed Superset:
+  - TypeScript (TSX for React components)
+
+Build Tool:
+  - Vite 6 — an extremely fast development server and bundler.
+  - Replaces the older Create React App (CRA) setup.
+  - Uses native ES Modules for faster Hot Module Replacement (HMR).
+
+Core Framework:
+  - React 19 — the latest version of React.
+  - Uses functional components with Hooks (useState, useEffect, useRef, etc.)
+    throughout.
+
+Routing:
+  - react-router-dom v7
+  - BrowserRouter wraps the entire app.
+  - Routes and Route components define all page paths.
+  - useParams() hook is used to read dynamic URL segments (e.g., :portal).
+  - useNavigate() hook is used for programmatic navigation after login.
+
+Styling:
+  - TailwindCSS v4 via the @tailwindcss/vite plugin.
+  - Utility-first CSS classes applied directly in JSX.
+  - clsx and tailwind-merge libraries are used to conditionally combine
+    class names without conflicts.
+
+Animations:
+  - motion/react (Framer Motion) — AnimatePresence wraps all routes.
+  - Individual components use motion.div with initial, animate, exit props
+    for entrance and exit animations.
+
+Icons:
+  - lucide-react — lightweight, consistent SVG icon set used throughout
+    all dashboards and navigation elements.
+
+Charts:
+  - Recharts — used in Admin Dashboard and NGO Dashboard for data visualization.
+  - Components used: PieChart, BarChart, LineChart, Tooltip, Legend.
+
+Maps:
+  - @react-google-maps/api — official Google Maps React wrapper.
+  - LoadScript loads the Google Maps JavaScript API.
+  - GoogleMap renders the map canvas.
+  - Marker, Polyline components show delivery routes.
+
+AI Integration (Optional):
+  - @google/genai — Google Generative AI SDK integrated for AI-powered features.
+  - GEMINI_API_KEY is injected via Vite's environment variable mechanism.
+
+File Structure (Frontend: src/):
+  - main.tsx          -> Application entry point; renders <App /> into the DOM.
+  - App.tsx           -> Sets up BrowserRouter and animated route definitions.
+  - index.css         -> Global CSS styles and Tailwind directives.
+  - lib/utils.ts      -> Utility functions (e.g., class name helpers).
+  - pages/            -> All page-level components (one per route).
+  - components/       -> Reusable components shared across pages.
+  - components/registration/ -> Registration form components per user type.
+
+Key Frontend Logic:
+  - On app load, App.tsx renders AnimatedRoutes which matches the URL to the
+    correct page component.
+  - LoginPage reads the :portal param from the URL to determine user type.
+  - After successful OTP verification, RegisterPage submits the full form data
+    to the backend and redirects to the correct dashboard.
+  - Each dashboard component fetches its own data from the backend on mount
+    using useEffect.
+
+
+--------------------------------------------------------------------------------
+7. BACKEND TECHNICAL DETAILS
+--------------------------------------------------------------------------------
+
+Language:
+  - TypeScript (compiled at runtime using tsx — no separate build step needed
+    for development).
+
+Runtime:
+  - Node.js
+
+Web Framework:
+  - Express.js v4 — minimalist and flexible HTTP server framework.
+
+Entry Point:
+  - server/index.ts
+
+Middleware Used:
+  - cors()          -> Allows cross-origin requests from the frontend (port 3000)
+                       to the backend (port 5000).
+  - express.json()  -> Parses incoming JSON request bodies automatically.
+
+Database:
+  - PostgreSQL hosted on Supabase.
+  - Connected using the pg (node-postgres) library with pg.Pool for
+    connection pooling.
+  - DATABASE_URL is the Supabase connection string stored in the .env file.
+  - SSL is enabled (rejectUnauthorized: false) as required by Supabase.
+
+OTP System:
+  - A JavaScript Map (key: email, value: {otp, expiresAt}) stores active OTPs
+    in server memory.
+  - OTP generation: Math.floor(100000 + Math.random() * 900000) generates
+    a secure 6-digit number.
+  - Expiry: 5 minutes (Date.now() + 5 * 60 * 1000).
+  - After successful verification, the OTP is deleted from the Map.
+
+Email Service:
+  - Nodemailer v8 with Gmail SMTP.
+  - Credentials (EMAIL_USER, EMAIL_PASS) loaded from the .env file.
+  - Sends both plain text and styled HTML email to the registering user.
+
+API Endpoints:
+  - GET  /api/health          -> Tests database connectivity, returns timestamp.
+  - POST /api/auth/login      -> Validates email/password and logs in the user.
+  - POST /api/auth/send-otp   -> Generates and emails an OTP.
+  - POST /api/auth/verify-otp -> Validates the submitted OTP against stored value.
+
+Server Port:
+  - Reads from process.env.PORT, defaults to 5000 if not set.
+
+
+--------------------------------------------------------------------------------
+8. FRAMEWORKS USED (WITH REASONS)
+--------------------------------------------------------------------------------
+
+1. React 19
+   Why: Industry-standard frontend library for building component-based UIs.
+   Offers a large ecosystem, virtual DOM for performance, and easy state
+   management with hooks.
+
+2. Vite 6
+   Why: Significantly faster than Create React App. Uses native ES Modules
+   in development for instant server start and lightning-fast HMR.
+
+3. Express.js
+   Why: Lightweight and unopinionated Node.js framework. Perfect for
+   quickly building REST APIs without unnecessary overhead.
+
+4. TailwindCSS v4
+   Why: Utility-first CSS framework. Speeds up styling by applying classes
+   directly in JSX. The @tailwindcss/vite plugin integrates seamlessly with
+   the Vite build pipeline.
+
+5. React Router DOM v7
+   Why: The standard routing solution for React SPAs. Supports nested routes,
+   dynamic URL params, and programmatic navigation.
+
+6. motion/react (Framer Motion)
+   Why: Provides a simple, declarative API for creating smooth, production-
+   quality animations and page transitions in React.
+
+7. Recharts
+   Why: A composable charting library built on top of React and SVG. Easy
+   to integrate and customize for the admin analytics views.
+
+8. @react-google-maps/api
+   Why: Official React bindings for the Google Maps JavaScript API. Provides
+   React-friendly components for map, markers, and route overlays.
+
+
+--------------------------------------------------------------------------------
+9. TOOLS AND SOFTWARE USED
+--------------------------------------------------------------------------------
+
+IDE:
+  - Visual Studio Code (VS Code)
+
+Runtime:
+  - Node.js (v18+)
+
+Package Manager:
+  - npm (Node Package Manager)
+
+Database:
+  - Supabase (cloud-hosted PostgreSQL)
+  - Accessed via the pg (node-postgres) npm package
+
+Database Connection Test:
+  - test-db.ts / test-db.js — small standalone scripts to verify PostgreSQL
+    connection outside the main server.
+
+TypeScript Executor:
+  - tsx — runs TypeScript files directly in Node.js without a separate
+    compile step (used for the backend via: npm run server).
+
+Version Control:
+  - Git and GitHub — for source control and remote repository hosting.
+
+Email Service:
+  - Gmail SMTP via Nodemailer
+
+External APIs:
+  - Google Maps JavaScript API — for map rendering and route display.
+  - Google Generative AI (Gemini) API — for any AI-powered features.
+
+Environment Management:
+  - dotenv — loads .env file variables into process.env for the backend.
+  - Vite loadEnv — injects .env variables into the frontend build.
+
+Concurrency Tool:
+  - concurrently — allows running frontend (Vite) and backend (Express)
+    servers simultaneously with a single npm command.
+
+Security Libraries:
+  - bcryptjs — for password hashing before storing in the database.
+  - jsonwebtoken (JWT) — for generating and verifying authentication tokens.
+
+
+--------------------------------------------------------------------------------
+10. FILE STRUCTURE EXPLANATION
+--------------------------------------------------------------------------------
+
+zerowaste/                         <- Root project directory
+|
+|-- server/                        <- All backend Express server code
+|   |-- index.ts                   <- Main server file (routes, DB, OTP, email)
+|   |-- models/                    <- (Reserved) Database models/schemas
+|   |-- routes/                    <- (Reserved) Separate route handler files
+|
+|-- src/                           <- All frontend React source code
+|   |-- main.tsx                   <- React app entry point
+|   |-- App.tsx                    <- Root component with Router & all routes
+|   |-- index.css                  <- Global styles and Tailwind base directives
+|   |-- lib/
+|   |   |-- utils.ts               <- Helper utilities (e.g., cn() for classnames)
+|   |-- pages/
+|   |   |-- LandingPage.tsx        <- Home page / portal selection screen
+|   |   |-- LoginPage.tsx          <- Login form (multi-portal via :portal param)
+|   |   |-- RegisterPage.tsx       <- Registration form with OTP flow
+|   |   |-- RestaurantDashboard.tsx -> Restaurant user dashboard
+|   |   |-- NgoDashboard.tsx       <- NGO user dashboard
+|   |   |-- AdminDashboard.tsx     <- Admin control panel
+|   |   |-- AgentsDashboard.tsx    <- Wrapper that loads correct agent dashboard
+|   |   |-- DeliveryAgentDashboard.tsx -> Delivery agent task management
+|   |   |-- VerificationAgentDashboard.tsx -> Document verification interface
+|   |   |-- LiveDeliveryPage.tsx   <- Real-time delivery map tracking page
+|   |   |-- MapView.tsx            <- Google Maps component for delivery route
+|   |-- components/
+|       |-- DashboardLayout.tsx    <- Shared sidebar + header layout for dashboards
+|       |-- DocumentViewerModal.tsx -> Modal to view uploaded documents inline
+|       |-- FileUpload.tsx         <- Reusable file upload form element
+|       |-- Stepper.tsx            <- Multi-step form progress indicator
+|       |-- registration/
+|           |-- RestaurantRegistration.tsx -> Restaurant-specific registration form
+|           |-- NgoRegistration.tsx        -> NGO-specific registration form
+|           |-- AgentRegistration.tsx      -> Agent-specific registration form
+|
+|-- public/                        <- Static assets served directly (images, icons)
+|-- dist/                          <- Production build output (generated by Vite)
+|-- node_modules/                  <- All installed npm packages (auto-generated)
+|-- .env                           <- Secret environment variables (NOT committed)
+|-- .env.example                   <- Template showing required env variables
+|-- .gitignore                     <- Files excluded from Git version control
+|-- package.json                   <- Project metadata, scripts, and dependencies
+|-- package-lock.json              <- Locked dependency versions for reproducibility
+|-- tsconfig.json                  <- TypeScript compiler configuration
+|-- vite.config.ts                 <- Vite build tool configuration
+|-- index.html                     <- HTML entry point (Vite injects React here)
+|-- test-db.ts / test-db.js        <- Standalone DB connection test scripts
+|-- README.md                      <- Project overview and setup instructions
+|-- viva/
+    |-- viva.txt                   <- This documentation file
+
+
+--------------------------------------------------------------------------------
+11. DATA FLOW AND WORKING LOGIC OF THE APPLICATION
+--------------------------------------------------------------------------------
+
+USER REGISTRATION FLOW:
+  1. User opens the app -> Lands on LandingPage.
+  2. User selects their portal (Restaurant / NGO / Agent).
+  3. Browser navigates to /register/:portal.
+  4. RegisterPage renders the correct registration sub-component (Restaurant,
+     NGO, or Agent form) based on the :portal URL parameter.
+  5. User fills in details -> clicks "Send OTP".
+  6. Frontend calls POST /api/auth/send-otp with the user's email.
+  7. Backend generates a 6-digit OTP, stores it in memory with a 5-min expiry,
+     and emails it to the user via Nodemailer/Gmail.
+  8. User enters the OTP in the frontend form.
+  9. Frontend calls POST /api/auth/verify-otp with email + OTP.
+  10. Backend checks the OTP against the stored value and expiry.
+  11. If valid: OTP is deleted from memory, frontend proceeds to form submission.
+  12. Full registration data is submitted to the backend -> stored in PostgreSQL.
+
+LOGIN FLOW:
+  1. User navigates to /login/:portal.
+  2. LoginPage sends POST /api/auth/login with email and password.
+  3. Backend validates credentials against the PostgreSQL database.
+  4. On success: frontend redirects to the correct dashboard (/dashboard/:role).
+  5. User session/token is stored in browser localStorage or state for
+     authenticated requests.
+
+DONATION FLOW:
+  1. Restaurant logs in -> opens Restaurant Dashboard.
+  2. Restaurant posts a new food donation (item, quantity, expiry time).
+  3. Donation is stored in PostgreSQL with status "Available".
+  4. NGO logs in -> sees available donations in NGO Dashboard.
+  5. NGO accepts a donation -> status changes to "Accepted" in the database.
+  6. Admin logs in -> sees accepted donations -> assigns a Delivery Agent.
+  7. Delivery Agent logs in -> sees their assigned task.
+  8. Agent picks up food -> updates status to "Picked Up".
+  9. Agent delivers -> updates status to "Delivered".
+  10. All parties can track the active delivery on the Live Delivery Page via
+      Google Maps.
+
+VERIFICATION FLOW:
+  1. New Restaurant / NGO completes registration -> status is "Pending Verification".
+  2. Verification Agent logs in -> sees all pending registrations.
+  3. Agent opens the DocumentViewerModal to review uploaded certificates.
+  4. Agent approves or rejects the registration.
+  5. Status is updated in PostgreSQL accordingly.
+
+
+--------------------------------------------------------------------------------
+12. APIS AND INTEGRATIONS USED
+--------------------------------------------------------------------------------
+
+a) Backend REST API (Custom - Built with Express.js):
+   - GET  /api/health          -> Checks DB connection health.
+   - POST /api/auth/login      -> User login with email and password.
+   - POST /api/auth/send-otp   -> Sends OTP email for registration verification.
+   - POST /api/auth/verify-otp -> Verifies the OTP entered by the user.
+
+b) Google Maps JavaScript API:
+   - Integrated via @react-google-maps/api library.
+   - Used in LiveDeliveryPage.tsx and MapView.tsx.
+   - Renders the map, places markers at pickup and drop-off locations,
+     and draws a route polyline between them.
+   - API Key: Stored as GOOGLE_MAPS_API_KEY in the .env file.
+
+c) Google Generative AI (Gemini) API:
+   - Integrated via @google/genai npm package.
+   - API Key: GEMINI_API_KEY loaded by Vite from the .env file.
+   - Used for any AI-assisted features within the platform.
+
+d) Supabase PostgreSQL:
+   - Not accessed via the Supabase JS client directly.
+   - Connected using the raw PostgreSQL connection string via the pg library.
+   - This gives full SQL control without being tied to Supabase's client SDK.
+
+e) Gmail SMTP (via Nodemailer):
+   - Used to send OTP verification emails to users during registration.
+   - Configured with Gmail App Password (not the regular Gmail password) for
+     security, stored in EMAIL_USER and EMAIL_PASS in the .env file.
+
+
+--------------------------------------------------------------------------------
+13. CHALLENGES FACED AND SOLUTIONS
+--------------------------------------------------------------------------------
+
+Challenge 1: CORS Errors between Frontend and Backend
+   Problem: The frontend (port 3000) could not call the backend (port 5000)
+            due to browser's CORS security policy.
+   Solution: Added the cors() middleware in Express, which adds the
+             "Access-Control-Allow-Origin" header to all responses, allowing
+             cross-origin requests from any origin during development.
+
+Challenge 2: Supabase SSL Connection Requirement
+   Problem: Connecting to Supabase PostgreSQL failed with SSL errors when
+            using the pg library.
+   Solution: Set ssl: { rejectUnauthorized: false } in the pg.Pool config.
+             This tells the PostgreSQL client to allow SSL connections even
+             without strict certificate validation (common for cloud DBs).
+
+Challenge 3: Running TypeScript Directly on the Backend
+   Problem: Node.js cannot execute .ts files natively. A compilation step
+            would slow down development.
+   Solution: Used the tsx npm package as the script runner. tsx compiles and
+             runs TypeScript files on-the-fly without generating output files,
+             making development seamless.
+
+Challenge 4: OTP Storage Without a Session Database
+   Problem: Storing OTPs in a database adds complexity. A Redis session store
+            would be ideal but adds infrastructure overhead for a student project.
+   Solution: Used a JavaScript in-memory Map object on the server. It is fast,
+             requires no external service, and works for the project's scale.
+             OTPs are auto-expired using timestamp comparison.
+
+Challenge 5: Multiple User Roles with Single Login/Register Component
+   Problem: Building separate login and register pages for each role (Restaurant,
+            NGO, Admin, Agent) would result in massive code duplication.
+   Solution: Used dynamic URL parameters (:portal, :role) with React Router.
+             The single LoginPage and RegisterPage read the URL param and
+             conditionally render the appropriate form and logic.
+
+Challenge 6: Real-Time Map for Live Delivery
+   Problem: Integrating Google Maps in React requires careful API loading to
+            avoid "useEffect on unmounted component" errors and API key exposure.
+   Solution: Used @react-google-maps/api's LoadScript component which handles
+             API loading safely. The Google Maps API key is kept in the .env
+             file and injected into the frontend build via Vite's loadEnv.
+
+Challenge 7: Gmail SMTP Authentication for OTP Emails
+   Problem: Gmail blocked "less secure app" sign-ins, causing Nodemailer to fail.
+   Solution: Generated a Gmail App Password (under Google Account -> Security ->
+             2-Step Verification -> App Passwords) and used that as EMAIL_PASS
+             instead of the regular Gmail password.
+
+
+--------------------------------------------------------------------------------
+14. CONCLUSION
+--------------------------------------------------------------------------------
+
+ZeroWaste is a complete, full-stack web application that solves a real-world
+social problem — food waste — through a structured, role-based platform. The
+application demonstrates proficiency in:
+
+- Full-stack development using React (Frontend) and Node.js/Express (Backend).
+- TypeScript for type-safe code on both client and server sides.
+- Modern tooling with Vite for fast development and builds.
+- Database integration with Supabase-hosted PostgreSQL using the pg library.
+- Secure email-based OTP verification using Nodemailer and Gmail SMTP.
+- Real-time map integration using the Google Maps JavaScript API.
+- Role-based multi-portal architecture serving five distinct user types.
+- Reusable and modular component design in React for maintainability.
+- Professional project setup with environment variable management, Git version
+  control, and clear separation of concerns between frontend and backend.
+
+The project follows modern web development best practices and is designed to
+be scalable, maintainable, and production-ready with further backend route
+development and database schema expansion.
+
+================================================================================
+                            END OF DOCUMENTATION
+================================================================================
